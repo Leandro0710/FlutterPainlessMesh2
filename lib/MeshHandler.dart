@@ -44,26 +44,43 @@ class MeshHandler extends MeshActivity{
     return calcNodeId;
   }
 
-  static void sendNodeSyncRequest() async {
-    if(MeshCommunicator.isConnected()) {
-      try{
-      Map<String, dynamic> nodeMessage = {
-        'dest': MeshActivity.apNodeId,
-        'from': MeshActivity.myNodeId,
-        'type': 5,
-        'subs': [],
-      };
-      String msg = json.encode(nodeMessage);
-      List<int> data = utf8.encode(msg);
-      MeshCommunicator.writeData(data);
+  static String getWifiMACAddress(){
+    return "01:02:03:04:05:06";
+  }
 
-      print('Sending node sync request: $msg');
-    }
-    catch(_){
-        print("Error sending node sync request");
-    }
+  static void sendNodeSyncRequest(){
+    if(MeshCommunicator.isConnected()) {
+      Map<String, dynamic> nodeMessage = {};
+      List<dynamic> subsArray = [];
+      try {
+        nodeMessage['dest'] = MeshActivity.apNodeId;
+        nodeMessage['from'] = MeshActivity.myNodeId;
+        nodeMessage['type'] = 5;
+        nodeMessage['subs'] = subsArray;
+        String msg = jsonEncode(nodeMessage);
+        List<int> data = utf8.encode(msg);
+        MeshCommunicator.writeData(data);
+        print('Sending node sync request $msg');
+      } catch (e) {
+        print('Error: $e');
+      }
     }
   }
+
+  static void sendTimeSyncRequest(){
+    Map<String, dynamic> nodeMessage = new Map();
+    Map<String, dynamic> typeObject = new Map();
+    nodeMessage["dest"] = MeshActivity.apNodeId;
+    nodeMessage["from"] = MeshActivity.myNodeId;
+    nodeMessage["type"] = 4;
+    typeObject["type"] = 0;
+    nodeMessage["msg"] = typeObject;
+    String msg = json.encode(nodeMessage);
+    List<int> data = utf8.encode(msg);
+    MeshCommunicator.writeData(data);
+  }
+
+
 
 
 }

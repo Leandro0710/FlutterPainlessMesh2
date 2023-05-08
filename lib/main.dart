@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'MeshActivity.dart';
 
 void main() {
   runApp(const MyApp());
@@ -60,11 +61,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   StreamSubscription<dynamic>? streamSubscription;
-  final eventChannel = const EventChannel('platform.testing/datos');
-  final messageChannel = const BasicMessageChannel<String>(
-      'platform.testing/message', StringCodec());
-  static const platform = MethodChannel('samples.flutter.dev/battery');
-  // Get battery level.
 
   final String ssid = "whateverYouLike";
   final String contrasena = "somethingSneaky";
@@ -91,103 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            /*
-            TextField(
-              showCursor: true,
-              controller: ssid,
-              decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Nombre del wifi'
-              ),
-            ),
-            TextField(
-              showCursor: true,
-              controller: contrasena,
-              decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'clave'
-              ),
-            ),
-            TextField(
-              keyboardType: TextInputType.number,
-              controller: puerto,
-              decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'puerto'
-              ),
-            ),
-             */
-            ElevatedButton(
-              onPressed: (){sendToAndroid();},
-              child: const Text('Conexion wifi mesh'),
-            ),
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  Text("===Datos===="),
-                  Text(meshIP),
-                Text(nodo),
-              ],
-              )
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  /*
-  Future<void> _wifinodomesh() async {
-    try {
-      streamSubscription =
-          eventChannel.receiveBroadcastStream().listen((event) {
-            print('Conexion: $event');
-            if (!mounted) return;
-            setState(() {
-              nodo = event;
-              nodoanalisis = true;
-            });
-          }, onError: (error) {
-            print(error);
-          });
-
-    } on Error catch (e) {
-      nodo = "Failed";
-    }
-
-    setState(() {
-    });
-  }
-*/
-  Future<void> sendToAndroid() async {
-    _lista.add(ssid);
-    _lista.add(contrasena);
-    _lista.add(puerto);
-    try {
-      int _meshIPint = await platform.invokeMethod('llegadadatos', [nodoanalisis, _lista] );
-      //Vemos si esta haciendo el analisis o no
-
-        if (!nodoanalisis){
-          print("Analisis empezando");
-          nodoanalisis = !nodoanalisis;
-        }else{
-          nodo = " ";
-          streamSubscription?.cancel();
-          streamSubscription = null;
-          print("detener analisis");
-          nodoanalisis = !nodoanalisis;
-        }
-      setState(() {meshIP= _meshIPint.toString(); });
-    } catch (e) {
-      print(e);
-    }
-
+    return MeshActivity();
   }
 
 
