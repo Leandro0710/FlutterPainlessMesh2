@@ -70,7 +70,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool nodoanalisis = false;
   String meshIP = " ";
 
-  List _lista = [];
 
   @override
   void dispose() {

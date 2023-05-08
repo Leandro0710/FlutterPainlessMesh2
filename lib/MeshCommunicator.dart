@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:js_interop';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -23,11 +23,11 @@ class MeshCommunicator
   static String MESH_NODES = "NODE";
 
   //Local copy of the mesh network AP gateway address */
-  static String serverIp = "192.168.0.2";
+  static String serverIp = "10.183.133.1";
   // Local copy of the mesh network communication port */
-  static int serverPort = 1234;
+  static int serverPort = 5555;
 
-  static late Socket connectionSocket;
+  static late Socket? connectionSocket = null;
 
   var streamController = StreamController<String>();
   var data = StringBuffer();
@@ -35,49 +35,36 @@ class MeshCommunicator
 
   //Verificar el socket si esta conectado
   static bool isConnected(){
-    return false;
+    return (connectionSocket == null);
   }
   //Abrir conexion de nodo
-  static void Connect(String ip, int port) {
+  static Future<void> Connect(String ip, int port) async {
     serverIp = ip;
     serverPort = port;
+    await Isolate.spawn(ConnectRunnableRun,"Funcionando ConnectRunnable");
   }
 
   static void Disconnect(){
-    stopStream();
     try{
-      connectionSocket.destroy();
+      connectionSocket?.destroy();
     }catch(e){
       print(e);
     }
   }
 
-  static void writeData(List<int> data) {
+  static Future<void> writeData(List<int> data) async {
+
     if (isConnected()) {
-      sendSocketData(data);
+      print("Antes");
+      //await Isolate.spawn(sendSocketData,data);
+      MeshCommunicator.sendSocketData(data);
+      print("Despues await");
     }
 
   }
 
-  static void startSending() {
-    //sendRunnable = new SendRunnable(connectionSocket);
-    //sendThread = new Thread(sendRunnable);
-    //sendThread.start();
-  }
-
-
-  static void stopStream() {
-    /*if (receiveThread != null)
-      receiveThread.interrupt();
-
-    if (sendThread != null)
-      sendThread.interrupt();
-
-     */
-  }
-
-
-  ConnectRunnableRun(dynamic message) async {
+  static ConnectRunnableRun(dynamic message) async {
+    print(message);
 
     InternetAddress? serverAddr = InternetAddress.tryParse(serverIp);
     if (serverAddr == null) {
@@ -87,8 +74,7 @@ class MeshCommunicator
 
     try {
       connectionSocket = await Socket.connect(serverAddr, serverPort);
-      connectionSocket.setOption(SocketOption.tcpNoDelay, true);
-      connectionSocket.listen(dataHandler,
+      connectionSocket?.listen(dataHandler,
           onError: errorHandler,
           onDone: doneHandler,
           cancelOnError: false);
@@ -98,34 +84,31 @@ class MeshCommunicator
       print(e);
     }
 
-    stdin.listen((data) =>
-        connectionSocket.write(
-            new String.fromCharCodes(data).trim() + '\n'));
   }
-  void dataHandler(data) {
+  static void dataHandler(data) {
     MESH_DATA_RECVD += utf8.decode(data);
 
     if (MESH_DATA_RECVD.contains('}')) {
       int realLen = MESH_DATA_RECVD.lastIndexOf("}");
       MESH_DATA_RECVD = MESH_DATA_RECVD.substring(0, realLen + 1);
-
       handleReceivedMessage(MESH_DATA_RECVD);
 
       MESH_DATA_RECVD = '';
     }
   }
 
-  void handleReceivedMessage(String message) {
+  static void handleReceivedMessage(String message) {
     // Process the received message
-    print(MESH_DATA_RECVD);
+    print("Datos a llegar: "+ MESH_DATA_RECVD);
   }
 
-  void errorHandler(error, StackTrace trace){
-    print(error);
+  static void errorHandler(error, StackTrace trace){
+    print("Tuviste un error" + error);
   }
 
-  void doneHandler(){
-    connectionSocket.destroy();
+  static void doneHandler(){
+    print("Desconexion");
+    connectionSocket?.destroy();
   }
 
   Stream<String> receiveSocketData(Socket socket) async* {
@@ -151,16 +134,18 @@ class MeshCommunicator
     }
   }
 
-  static Stream<String> sendSocketData(List<int> data) async* {
+  static Stream<void> sendSocketData(List<int> data) async* {
     String msg = json.encode(data);
+    print("msg: " + msg);
+    try{
+      connectionSocket?.add(data);
+      connectionSocket?.add([0]);
+      connectionSocket?.flush();
+    }
+    catch(e){
+      print(e);
+    }
 
-
-    connectionSocket.add(data);
-    connectionSocket.add([0]);
-    connectionSocket.flush();
-
-    yield msg;
-    await Future.delayed(Duration(seconds: 1));
   }
 
 

@@ -20,7 +20,7 @@ class MeshActivity extends StatefulWidget {
   /** Flag when user stops connection */
   static bool userDisConRequest = false;
 
-  /** Mesh name == Mesh SSID */
+  /** Mesh name == Mesh SSI */
   static late String meshName = "whateverYouLike";
   /** Mesh password == Mesh network password */
   static late String meshPw = "somethingSneaky";
@@ -41,6 +41,7 @@ class MeshActivity extends StatefulWidget {
   static late var wifi;
 
   @override
+
   State<MeshActivity>  createState() => _MeshActivity();
 }
 
@@ -50,15 +51,14 @@ class _MeshActivity  extends State<MeshActivity> {
   @override
   void initState() {
     super.initState();
-    startTimer();
+    NetworkInfo();
     // Inicialización de objetos que necesitan configuración
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    MeshActivity.wifi = NetworkInfo();
-    broadcast();
+    //broadcast();
     // Manejo de cualquier cambio en las dependencias del Widget
   }
 
@@ -66,12 +66,31 @@ class _MeshActivity  extends State<MeshActivity> {
   Widget build(BuildContext context) {
     // Construcción y renderizado del Widget
     return Scaffold(
+        floatingActionButton: FloatingActionButton(
+         onPressed: () async {
+           await MeshHandler.sendNodeSyncRequest();
+      // Add your onPressed code here!
+      },
+         backgroundColor: Colors.green,
+     child: const Icon(Icons.navigation),
+      ),
       appBar: AppBar(
         title: Text('Socket Messages'),
       ),
       body: Column(
         children: [
-          TextButton(onPressed: startConnectionRequest, child: Text(
+          TextButton(onPressed: () async {
+            NetworkInfo wifiInfo = NetworkInfo();
+            String? wifi= await wifiInfo.getWifiBSSID();
+            MeshActivity.apNodeId = MeshHandler.createMeshID(wifi!);
+
+            MeshActivity.meshIP = await wifiInfo.getWifiGatewayIP() as String;
+
+            // Create our node ID
+            MeshActivity.myNodeId = MeshHandler.createMeshID(await MeshHandler.getWifiMACAddress());
+
+            MeshCommunicator.Connect(MeshActivity.meshIP,MeshActivity.meshPort);
+          }, child: Text(
             'Presionar',
             style: TextStyle(
               fontSize: 20,
@@ -79,23 +98,20 @@ class _MeshActivity  extends State<MeshActivity> {
             ),
           ),
           ),
-          TextButton(onPressed: broadcast, child: Text(
-            'Conexion socket',
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.blue,
+          /*
+          Container(
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                // Construir un widget para mostrar cada mensaje
+                return ListTile(
+                  title: Text(_messages[index]),
+                );
+              },
             ),
-          ),
-          ),
-          ListView.builder(
-            itemCount: _messages.length,
-            itemBuilder: (context, index) {
-              // Construir un widget para mostrar cada mensaje
-              return ListTile(
-                title: Text(_messages[index]),
-              );
-            },
-          ),
+          )
+
+           */
         ],
       ),
     );
@@ -103,6 +119,8 @@ class _MeshActivity  extends State<MeshActivity> {
 
   @override
   void dispose() {
+    super.dispose();
+
     // Liberación de recursos utilizados por el Widget
   }
 
@@ -124,12 +142,14 @@ class _MeshActivity  extends State<MeshActivity> {
   void handleConnection() {
     if (!MeshActivity.isConnected) {
       if (MeshActivity.tryToConnect) {
+        print("Start detener");
         stopConnection();
       } else {
         print("Start Conexion");
         startConnectionRequest();
       }
     } else {
+      print("Conexion detener");
       stopConnection();
     }
   }
@@ -149,6 +169,7 @@ class _MeshActivity  extends State<MeshActivity> {
         MeshActivity.oldAPName = wifiInfo;
       }
     }
+
     PluginWifiConnect.deactivateWifi();
     PluginWifiConnect.activateWifi();
     PluginWifiConnect.connectToSecureNetwork(
@@ -159,12 +180,16 @@ class _MeshActivity  extends State<MeshActivity> {
     if (MeshCommunicator.isConnected()) {
       MeshCommunicator.Disconnect();
     }
+
+
   }
 
 
   static void broadcast() async {
-    String WifiBSSID;
+    MeshActivity.tryToConnect = true;
+    MeshActivity.userDisConRequest = false;
     // WiFi events
+    /*
     if (MeshActivity.isConnected) {
       // Did we lose connection to the mesh network?
       var connectivityResult = await (Connectivity().checkConnectivity());
@@ -175,20 +200,23 @@ class _MeshActivity  extends State<MeshActivity> {
         }
       }
     }
+
+     */
     if (MeshActivity.tryToConnect) {
       /* Access to connectivity manager */
       var connectivityResult = await (Connectivity().checkConnectivity());
       /* WiFi connection information  */
       NetworkInfo wifiInfo = NetworkInfo();
       if (connectivityResult == ConnectivityResult.wifi) {
-        if (await PluginWifiConnect.isEnabled) {
-          if (MeshActivity.tryToConnect && wifiInfo.getWifiName() == MeshActivity.meshName) {
+
+        //if (await PluginWifiConnect.isEnabled) {
+          if (MeshActivity.tryToConnect ) {
             print("Conectado al wifi");
-
             // Create the mesh AP node ID from the AP MAC address
-            MeshActivity.apNodeId = MeshHandler.createMeshID(wifiInfo.getWifiBSSID() as String);
+            String? wifi= await wifiInfo.getWifiBSSID();
+            MeshActivity.apNodeId = MeshHandler.createMeshID(wifi!);
 
-            MeshActivity.meshIP = wifiInfo.getWifiGatewayIP() as String;
+            MeshActivity.meshIP = await wifiInfo.getWifiGatewayIP() as String;
 
             // Create our node ID
             MeshActivity.myNodeId = MeshHandler.createMeshID(await MeshHandler.getWifiMACAddress());
@@ -196,7 +224,7 @@ class _MeshActivity  extends State<MeshActivity> {
             // Rest has to be done on UI thread
             await runInBackground();
           }
-        }
+        ///}
       }
     }
   }
@@ -207,6 +235,7 @@ class _MeshActivity  extends State<MeshActivity> {
 
     // Set flag that we are connected
     MeshActivity.isConnected = true;
+    print(connMsg);
 
     // Connected to the Mesh network, start network task now
     MeshCommunicator.Connect(MeshActivity.meshIP,MeshActivity.meshPort);
