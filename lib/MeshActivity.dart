@@ -52,13 +52,13 @@ class _MeshActivity  extends State<MeshActivity> {
   void initState() {
     super.initState();
     NetworkInfo();
+    //startTimer();
     // Inicialización de objetos que necesitan configuración
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    //broadcast();
     // Manejo de cualquier cambio en las dependencias del Widget
   }
 
@@ -80,16 +80,7 @@ class _MeshActivity  extends State<MeshActivity> {
       body: Column(
         children: [
           TextButton(onPressed: () async {
-            NetworkInfo wifiInfo = NetworkInfo();
-            String? wifi= await wifiInfo.getWifiBSSID();
-            MeshActivity.apNodeId = MeshHandler.createMeshID(wifi!);
-
-            MeshActivity.meshIP = await wifiInfo.getWifiGatewayIP() as String;
-
-            // Create our node ID
-            MeshActivity.myNodeId = MeshHandler.createMeshID(await MeshHandler.getWifiMACAddress());
-
-            MeshCommunicator.Connect(MeshActivity.meshIP,MeshActivity.meshPort);
+            broadcast();
           }, child: Text(
             'Presionar',
             style: TextStyle(
@@ -189,7 +180,7 @@ class _MeshActivity  extends State<MeshActivity> {
     MeshActivity.tryToConnect = true;
     MeshActivity.userDisConRequest = false;
     // WiFi events
-    /*
+
     if (MeshActivity.isConnected) {
       // Did we lose connection to the mesh network?
       var connectivityResult = await (Connectivity().checkConnectivity());
@@ -201,7 +192,6 @@ class _MeshActivity  extends State<MeshActivity> {
       }
     }
 
-     */
     if (MeshActivity.tryToConnect) {
       /* Access to connectivity manager */
       var connectivityResult = await (Connectivity().checkConnectivity());

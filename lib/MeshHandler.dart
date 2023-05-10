@@ -55,7 +55,7 @@ class MeshHandler extends MeshActivity{
       List<dynamic> subsArray = [];
       try {
         nodeMessage['dest'] = MeshActivity.apNodeId;
-        nodeMessage['from'] = MeshActivity.myNodeId;
+        nodeMessage['from'] = 2966131669;
         nodeMessage['type'] = 5;
         nodeMessage['subs'] = subsArray;
         String msg = jsonEncode(nodeMessage);
@@ -73,7 +73,7 @@ class MeshHandler extends MeshActivity{
       Map<String, dynamic> nodeMessage = new Map();
       Map<String, dynamic> typeObject = new Map();
       nodeMessage["dest"] = MeshActivity.apNodeId;
-      nodeMessage["from"] = MeshActivity.myNodeId;
+      nodeMessage["from"] = 2966131669;
       nodeMessage["type"] = 4;
       typeObject["type"] = 0;
       nodeMessage["msg"] = typeObject;

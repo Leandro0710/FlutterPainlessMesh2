@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:comunicacionnativo3/MeshHandler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -38,10 +39,10 @@ class MeshCommunicator
     return (connectionSocket == null);
   }
   //Abrir conexion de nodo
-  static Future<void> Connect(String ip, int port) async {
+  static Connect(String ip, int port) {
     serverIp = ip;
     serverPort = port;
-    await Isolate.spawn(ConnectRunnableRun,"Funcionando ConnectRunnable");
+    ConnectRunnableRun("Funcionando ConnectRunnable");
   }
 
   static void Disconnect(){
@@ -52,19 +53,23 @@ class MeshCommunicator
     }
   }
 
-  static Future<void> writeData(List<int> data) async {
+  static Stream<String> writeData(List<int> data) async* {
 
     if (isConnected()) {
       print("Antes");
       //await Isolate.spawn(sendSocketData,data);
-      MeshCommunicator.sendSocketData(data);
+      if(connectionSocket != null){
+        connectionSocket!.write(data);
+        connectionSocket!.add(data);
+        connectionSocket!.addStream(data as Stream<List<int>>);
+      }
+
       print("Despues await");
     }
 
   }
 
-  static ConnectRunnableRun(dynamic message) async {
-    print(message);
+  static ConnectRunnableRun(String message) async {
 
     InternetAddress? serverAddr = InternetAddress.tryParse(serverIp);
     if (serverAddr == null) {
@@ -72,20 +77,22 @@ class MeshCommunicator
       return;
     }
 
-    try {
+
+    try{
+      print("Conectanndo.....");
       connectionSocket = await Socket.connect(serverAddr, serverPort);
       connectionSocket?.listen(dataHandler,
           onError: errorHandler,
           onDone: doneHandler,
-          cancelOnError: false);
+          cancelOnError: true);
       print("Conectado!");
-
+      MeshHandler.sendNodeSyncRequest();
     } catch (e) {
       print(e);
     }
 
   }
-  static void dataHandler(data) {
+  static void dataHandler(data) async {
     MESH_DATA_RECVD += utf8.decode(data);
 
     if (MESH_DATA_RECVD.contains('}')) {
@@ -136,10 +143,9 @@ class MeshCommunicator
 
   static Stream<void> sendSocketData(List<int> data) async* {
     String msg = json.encode(data);
-    print("msg: " + msg);
     try{
-      connectionSocket?.add(data);
-      connectionSocket?.add([0]);
+      connectionSocket?.write(data);
+      connectionSocket?.write(0);
       connectionSocket?.flush();
     }
     catch(e){

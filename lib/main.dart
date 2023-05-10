@@ -73,14 +73,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    // Limpia el controlador cuando el Widget se descarte
-    /*
-    ssid.dispose();
-    contrasena.dispose();
-    puerto.dispose();
-
-     */
-    streamSubscription?.cancel();
     super.dispose();
   }
 
